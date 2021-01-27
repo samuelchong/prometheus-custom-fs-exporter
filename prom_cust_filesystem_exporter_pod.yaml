@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: prom-webapp
+  name: prom-webapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prom-webapp
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: prom-webapp
+    spec:
+      containers:
+      - image: samuelchong/prometheus-custom-fs-exporter:1.0.1
+        imagePullPolicy: IfNotPresent
+        name: prometheus-custom-fs-exporter
+        command: ["python"]
+        args: ["/opt/app/prometheus-custom-fs-exporter.py"]
+        resources: {}
+        ports:
+          - containerPort: 8000
+        volumeMounts:
+          - name: var-logs
+            mountPath: /var/log
+          - name: data
+            mountPath: "/bitnami/postgresql"
+      dnsPolicy: Default
+      volumes:
+      - name: var-logs
+        emptyDir: {}
+      - name: data
+        persistentVolumeClaim:
+          claimName: data-awx-postgresql-postgresql-0
+
+
+status: {}
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: prom-webapp
+  labels:
+    run: prom-webapp
+spec:
+  ports:
+  - name: prom-port
+    port: 8000
+    protocol: TCP
+  selector:
+    app: prom-webapp
+  type: NodePort
